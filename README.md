@@ -2,8 +2,12 @@
 
 **AI가 알아서 개발해주는 자동화 시스템**
 
+> Autonomous AI development loop for Claude Code — describe what you want, and AI builds it automatically with full Git workflow (branch, implement, test, PR, merge).
+
 RalphLoop은 [Claude Code](https://claude.com/claude-code)를 활용하여 프로젝트를 자동으로 개발하는 시스템입니다.
 요구사항(PRD)만 작성하면, AI가 코드 작성부터 테스트, PR 생성, 머지까지 전부 처리합니다.
+
+**Keywords**: Claude Code automation, AI coding agent, autonomous development, AI pair programming, automated PR workflow, Claude API, Anthropic, AI software engineer, vibe coding
 
 ---
 
