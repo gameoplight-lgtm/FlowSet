@@ -35,7 +35,10 @@ git checkout -b main
 ```
 
 ### Step 3: 프로젝트 구조 생성
-아래 구조를 현재 디렉토리에 생성:
+**1단계: `~/.claude/templates/ralph/`에서 템플릿 복사** (ralph.sh, PROMPT.md, hooks, workflows, .gitignore 등)
+**2단계: 아래 중 템플릿에 없는 파일만 직접 생성** (.claude/rules/, docs/, fix_plan.md, guardrails.md, AGENT.md)
+
+최종 구조:
 ```
 .github/
   workflows/
@@ -81,21 +84,50 @@ CLAUDE.md               # 프로젝트 정보 (규칙은 rules/ 참조)
 #### AGENT.md (프로젝트 타입별)
 프로젝트 타입에 맞는 lint/build/test 명령 기입.
 
-#### ralph.sh (필수 기능 — 간소화 금지)
-Ralph Loop의 핵심 스크립트. 아래 기능을 **모두** 포함해야 함:
+#### ralph.sh, PROMPT.md, hooks, workflows 등 (템플릿에서 복사)
+**직접 생성하지 않음.** `~/.claude/templates/ralph/`에서 복사합니다.
 
-1. **UTF-8 설정**: LANG, LC_ALL, PYTHONUTF8, PYTHONIOENCODING + Windows chcp 감지
-2. **.ralphrc 로드**: 존재 시 source
-3. **설정 변수**: MAX_ITERATIONS(기본 50), RATE_LIMIT_PER_HOUR(기본 80), COOLDOWN_SEC(기본 5), ERROR_COOLDOWN_SEC(기본 30), ALLOWED_TOOLS(기본 "Edit,Write,Read,Bash,Glob,Grep")
-4. **preflight()**: claude CLI 존재, gh CLI 존재 + 인증(`gh auth status`), git 저장소, 필수 파일(PROMPT.md, fix_plan.md, AGENT.md, .ralphrc, guardrails.md), fix_plan에 미완료 WI 존재 확인
-5. **count_tasks()**: 코드블록(`\`\`\``) 내부 체크박스 제외, awk로 unchecked/completed 카운트
-6. **check_all_done()**: completed=0 && unchecked=0 → 빈 상태(완료 아님) 구분
-7. **check_progress()**: git SHA + `git diff --quiet` 로 uncommitted 변경 감지, 연속 무진행 시 circuit breaker (NO_PROGRESS_LIMIT 기본 3)
-8. **check_rate_limit()**: 시간 기반 rate limiting (경과 시간 계산)
-9. **execute_claude()**: `claude -p "$prompt" --output-format json --append-system-prompt "$context" --allowedTools "$ALLOWED_TOOLS"`, EXIT_SIGNAL/에러 감지
-10. **validate_post_iteration()**: 커밋 메시지 WI-NNN-[type] 형식 검증, .ralph/ 파일 삭제 감지, 위반 시 guardrails.md 기록
-11. **main()**: preflight → while 루프(integrity→all_done→progress→rate_limit→execute→validate→cooldown)
-12. **종료 시**: 미머지 PR 확인 (`gh pr list --state open`), 최종 통계 출력
+```bash
+# 템플릿 디렉토리 확인
+TEMPLATE_DIR="$HOME/.claude/templates/ralph"
+if [[ ! -d "$TEMPLATE_DIR" ]]; then
+  echo "ERROR: 템플릿이 설치되지 않았습니다."
+  echo "  settings 저장소에서 설치하세요:"
+  echo "  git clone https://github.com/FlowCoder-cyh/RalphLoop.git /tmp/ralph-templates"
+  echo "  cp -r /tmp/ralph-templates/templates/ ~/.claude/templates/ralph/"
+  exit 1
+fi
+
+# 템플릿 복사 (중첩 방지: 개별 파일 단위)
+cp "$TEMPLATE_DIR/ralph.sh" ./ralph.sh
+cp "$TEMPLATE_DIR/.gitignore" ./.gitignore
+cp "$TEMPLATE_DIR/.gitattributes" ./.gitattributes
+cp "$TEMPLATE_DIR/.editorconfig" ./.editorconfig
+cp "$TEMPLATE_DIR/CLAUDE.md" ./CLAUDE.md
+
+# .ralph/ 내부 파일 복사 (디렉토리는 이미 Step 3에서 생성됨)
+cp "$TEMPLATE_DIR/.ralph/PROMPT.md" ./.ralph/PROMPT.md
+cp "$TEMPLATE_DIR/.ralph/hooks/commit-msg" ./.ralph/hooks/commit-msg
+cp "$TEMPLATE_DIR/.ralph/hooks/pre-push" ./.ralph/hooks/pre-push
+mkdir -p ./.ralph/scripts
+cp "$TEMPLATE_DIR/.ralph/scripts/enqueue-pr.sh" ./.ralph/scripts/enqueue-pr.sh
+cp "$TEMPLATE_DIR/.ralph/scripts/launch-loop.sh" ./.ralph/scripts/launch-loop.sh
+
+# .github/ 내부 파일 복사
+mkdir -p ./.github/workflows
+cp "$TEMPLATE_DIR/.github/PULL_REQUEST_TEMPLATE.md" ./.github/PULL_REQUEST_TEMPLATE.md
+cp "$TEMPLATE_DIR/.github/workflows/ci.yml" ./.github/workflows/ci.yml
+cp "$TEMPLATE_DIR/.github/workflows/commit-check.yml" ./.github/workflows/commit-check.yml
+cp "$TEMPLATE_DIR/.github/workflows/e2e.yml" ./.github/workflows/e2e.yml
+
+# .claude/rules/ 운영 규칙 복사
+mkdir -p ./.claude/rules
+cp "$TEMPLATE_DIR/.claude/rules/ralph-operations.md" ./.claude/rules/ralph-operations.md
+
+chmod +x ralph.sh .ralph/hooks/* .ralph/scripts/*.sh 2>/dev/null || true
+```
+
+**복사 후 프로젝트별 커스터마이징만 수행:**
 
 #### .ralphrc
 `PROJECT_NAME`, `PROJECT_TYPE` 필드를 인자 값으로 채움.
@@ -117,85 +149,60 @@ cp .ralph/hooks/pre-push .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 ```
 
+### Step 4.5: GitHub 계정 유형 안내
+
+레포 생성 전, 사용자에게 계정 유형을 안내합니다:
+
+```
+📋 GitHub 계정 유형 선택
+
+Ralph Loop은 PR 기반 자동 머지를 사용합니다.
+계정 유형에 따라 머지 방식이 달라집니다:
+
+🏢 조직(Organization) 계정 — 권장
+  - Merge Queue 사용 가능 (자동 rebase + CI + 머지)
+  - PR 충돌 자동 해소, 병렬 실행 시 안정적
+  - 조직이 없으면: https://github.com/organizations/plan 에서 무료 생성
+
+👤 개인(Personal) 계정
+  - Merge Queue 미지원
+  - strict: false로 설정 (CI 통과 시 즉시 머지)
+  - 같은 파일을 수정하는 WI가 충돌할 수 있음 (batch 설계로 최소화)
+
+어떤 계정을 사용하시겠습니까?
+  1) 조직 계정 (권장)
+  2) 개인 계정
+```
+
+사용자 선택에 따라:
+- **조직**: `gh repo create {org}/{project-name}` + (ruleset은 `/wi:start`에서 설정)
+- **개인**: `gh repo create {user}/{project-name}` + (ruleset은 `/wi:start`에서 설정)
+
+**사용자 선택을 `.ralphrc`에 기록:**
+```bash
+# .ralphrc에 계정 유형 저장 (wi:start에서 ruleset 설정 시 참조)
+GITHUB_ACCOUNT_TYPE="org"  # 또는 "personal"
+GITHUB_ORG="{org}"         # 조직명 또는 사용자명
+```
+
 ### Step 5: GitHub 레포 생성 & 설정
 ```bash
 # 레포 생성
 gh repo create {org}/{project-name} --private --source=. --remote=origin
 # 또는 --public (--private 플래그 여부에 따라)
 
-# 초기 커밋 & 푸시
+# 초기 커밋 & 푸시 (ruleset 없이 — 자유롭게 push 가능)
 git add -A
 git commit -m "WI-chore 프로젝트 초기 환경 셋업"
 git push -u origin main
 
 # 머지 시 브랜치 자동 삭제 활성화
 gh api -X PATCH "repos/{org}/{project-name}" -f delete_branch_on_merge=true
+gh api -X PATCH "repos/{org}/{project-name}" -f allow_auto_merge=true
 
-# 브랜치 보호 규칙 (main) — 플랜별 자동 분기
-#
-# 1. Rulesets API 시도 (Pro/Team/Enterprise)
-# 2. 실패 시 Branch Protection API fallback (Free public)
-# 3. 둘 다 실패 시 로컬 hooks만으로 보호 (Free private)
-
-# 먼저 Rulesets API 시도
-ruleset_ok=false
-gh api --method POST "repos/{org}/{project-name}/rulesets" --input - <<'RULES' 2>/dev/null && ruleset_ok=true
-{
-  "name": "Protect main",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": {
-    "ref_name": {
-      "include": ["refs/heads/main"],
-      "exclude": []
-    }
-  },
-  "rules": [
-    {
-      "type": "pull_request",
-      "parameters": {
-        "dismiss_stale_reviews_on_push": true,
-        "require_last_push_approval": false,
-        "required_approving_review_count": 0,
-        "required_review_thread_resolution": false
-      }
-    },
-    {
-      "type": "required_status_checks",
-      "parameters": {
-        "strict_required_status_checks_policy": true,
-        "required_status_checks": [
-          { "context": "lint" },
-          { "context": "build" },
-          { "context": "test" },
-          { "context": "check-commits" }
-        ]
-      }
-    },
-    { "type": "non_fast_forward" },
-    { "type": "deletion" }
-  ]
-}
-RULES
-
-# Rulesets 실패 시 → Branch Protection API (Free public repos)
-if [[ "$ruleset_ok" != "true" ]]; then
-  echo "Rulesets API 미지원 — Branch Protection API로 대체합니다."
-  gh api --method PUT "repos/{org}/{project-name}/branches/main/protection" \
-    --input - <<'PROTECT' 2>/dev/null || {
-    echo "Branch Protection API도 미지원 (Free private). 로컬 Git hooks로만 보호합니다."
-  }
-{
-  "required_status_checks": {
-    "strict": true,
-    "contexts": ["lint", "build", "test", "check-commits"]
-  },
-  "enforce_admins": false,
-  "required_pull_request_reviews": null,
-  "restrictions": null
-}
-PROTECT
-fi
+# ⚠️ ruleset/branch protection은 여기서 설정하지 않음
+# /wi:prd, /wi:env 단계에서 main에 직접 push가 필요하므로
+# /wi:start 실행 시 ruleset이 자동 적용됩니다
 ```
 
 ### Step 6: 완료 안내
@@ -223,7 +230,7 @@ fi
 
 🔗 GitHub: https://github.com/{org}/{project-name}
 
-📋 다음 단계: /wi:prd 로 PRD 생성
+📋 다음 단계: /wi:prd → /wi:env → /wi:start
 ```
 
 ## Boundaries

@@ -114,6 +114,55 @@ PRD의 L4 태스크를 WI 체크리스트로 변환:
 - 번호 자릿수: WI 총 개수에 따라 자동 결정 (99개 이하 → 3자리, 999개 이하 → 3자리, 1000개 이상 → 4자리)
 - L4 태스크가 없으면 사용자에게 알림 후 중단 (ralph.sh preflight가 빈 fix_plan 감지)
 
+**도메인 분리 분석 → PARALLEL_COUNT 자동 결정:**
+
+fix_plan 생성 후 도메인 분리 가능 여부를 분석하여 사용자에게 안내합니다.
+
+분석 기준:
+- **L1 도메인 수**: 3개 이상이면 병렬 가능성 높음
+- **공유 파일 수정 WI 비율**: page.tsx, layout.tsx 등을 수정하는 WI가 50% 이상이면 분리 불가
+- **총 WI 수**: 20개 미만이면 병렬 시간 절약 대비 충돌 리스크가 큼
+
+판정:
+- **병렬 권장**: L1 도메인 3개 이상 + 공유 파일 WI 30% 미만 + WI 20개 이상
+- **순차 권장**: 위 조건 미충족
+
+```
+📊 도메인 분리 분석 결과:
+  - L1 도메인: {N}개
+  - 공유 파일 수정 WI: {N}개 / {total}개 ({%})
+  - 총 WI: {N}개
+
+  ✅ 병렬 실행 권장 (PARALLEL_COUNT=2)
+  또는
+  ⚠️ 순차 실행 권장 (PARALLEL_COUNT=1)
+     사유: 도메인 분리 불충분 — 충돌 위험
+
+  병렬로 실행하시겠습니까? (Y/n)
+  ※ 병렬 선택 시 충돌 발생하면 자동 rebase 후 재실행됩니다.
+```
+
+사용자 선택에 따라 `.ralphrc`의 `PARALLEL_COUNT`를 설정합니다.
+
+**병렬 배치 태깅 (PARALLEL_COUNT > 1 시 활성화):**
+- `.ralphrc`에 `PARALLEL_COUNT=2` 이상이면 batch 태그를 WI에 자동 부여
+- 형식: `| batch:{영문라벨}` (L1 메타데이터 뒤에 추가)
+- 배치 규칙:
+  - **다른 L1 도메인** → 같은 batch (병렬 처리 가능)
+  - **같은 L1 도메인** → 다른 batch (순차 처리, 파일 충돌 방지)
+  - **L1:Shared** → 항상 단독 batch (공통 컴포넌트는 다른 WI와 병렬 불가)
+  - **DB 스키마 (prisma/schema 등)** → 항상 단독 batch (공유 파일)
+  - **패키지 설치 (package.json 변경)** → 항상 단독 batch
+  - **공유 UI 파일 수정 (page.tsx, layout.tsx, globals.css 등)** → 같은 batch 또는 단독 batch (충돌 방지)
+- 예시:
+  ```markdown
+  - [ ] WI-018-feat 근태 마감 | L1:Attendance > L2:마감 | batch:A
+  - [ ] WI-020-feat 휴가 대시보드 | L1:Leave > L2:대시보드 | batch:A
+  - [ ] WI-019-feat Leave DB 스키마 | L1:Leave > L2:DB | batch:B
+  - [ ] WI-021-feat 공통 네비게이션 | L1:Shared > L2:레이아웃 | batch:C
+  ```
+- `PARALLEL_COUNT=1`이면 batch 태그 생략 (순차 실행이므로 불필요)
+
 ### Phase 4: AGENT.md 업데이트
 
 PRD에서 파악한 기술 스택으로 `.ralph/AGENT.md`의 빌드/테스트 명령을 구체화.
@@ -128,6 +177,132 @@ docs/L1-domain/{name}.md   ← 각 대분류별 문서
 docs/L2-module/{name}.md   ← 각 중분류별 문서
 docs/L3-feature/{name}.md  ← 각 소분류별 문서
 docs/L4-task/               ← fix_plan.md가 마스터, 개별 문서는 필요 시만
+```
+
+### Phase 5.5: Smoke 테스트 생성
+
+PRD의 L1 도메인별 smoke 테스트를 자동 생성합니다.
+
+**절차:**
+1. fix_plan.md에서 L1 도메인 목록 추출
+2. 도메인별 웹리서치: `"{PROJECT_TYPE} {L1 domain} smoke test best practice {year}"`
+3. PRD + 리서치 결과 기반 smoke 테스트 설계
+4. 사용자 확인: "이 smoke 테스트로 진행할까요?" (Y/N)
+5. Playwright 기반 smoke 테스트 코드 생성
+
+**규칙:**
+- 각 테스트의 `describe` 블록에 WI 번호 포함: `describe('WI-063: 휴가 신청 폼', () => {...})`
+- e2e 실패 시 WI 번호 추출에 사용됨 (GitHub Actions e2e.yml 연동)
+- 도메인별 핵심 경로만 (페이지 접근 → 주요 요소 렌더링 확인)
+- 전체 도메인 커버 (누락 시 404/렌더링 깨짐 미감지)
+
+**생성 위치:**
+```
+tests/
+  smoke/
+    auth.spec.ts          ← 로그인 → 세션 유지
+    people.spec.ts        ← 직원 목록 → 상세
+    attendance.spec.ts    ← 대시보드 → 출결 기록
+    leave.spec.ts         ← 대시보드 → 휴가 신청
+    ...
+  e2e/
+    (추후 워커가 구현 시 자동 추가)
+```
+
+### Phase 5.9: Ruleset 설정 (루프 시작 전 보호 활성화)
+
+`.ralphrc`에서 `GITHUB_ACCOUNT_TYPE`과 `GITHUB_ORG`를 읽어 ruleset을 설정합니다.
+
+```bash
+# .ralphrc에서 계정 유형 읽기
+source .ralphrc
+
+REPO_FULL="${GITHUB_ORG}/${PROJECT_NAME}"
+
+# 브랜치 보호 규칙 (main) — 계정 유형별 자동 분기
+ruleset_ok=false
+
+# 1. Rulesets API 시도 (조직 계정)
+if [[ "${GITHUB_ACCOUNT_TYPE:-}" == "org" ]]; then
+  gh api --method POST "repos/${REPO_FULL}/rulesets" --input - <<'RULES' 2>/dev/null && ruleset_ok=true
+{
+  "name": "Protect main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "required_status_checks": [
+          { "context": "lint" },
+          { "context": "build" },
+          { "context": "test" },
+          { "context": "check-commits" }
+        ]
+      }
+    },
+    {
+      "type": "merge_queue",
+      "parameters": {
+        "check_response_timeout_minutes": 10,
+        "grouping_strategy": "ALLGREEN",
+        "max_entries_to_build": 5,
+        "max_entries_to_merge": 5,
+        "merge_method": "SQUASH",
+        "min_entries_to_merge": 1,
+        "min_entries_to_merge_wait_minutes": 1
+      }
+    },
+    { "type": "non_fast_forward" },
+    { "type": "deletion" }
+  ]
+}
+RULES
+fi
+
+# 2. 개인 계정 또는 Rulesets 실패 시 → strict: false
+if [[ "$ruleset_ok" != "true" ]]; then
+  gh api --method POST "repos/${REPO_FULL}/rulesets" --input - <<'RULES' 2>/dev/null || {
+    echo "⚠️ Ruleset 설정 실패 — 로컬 Git hooks로만 보호합니다."
+  }
+{
+  "name": "Protect main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": {
+    "ref_name": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": false,
+        "required_status_checks": [
+          { "context": "lint" },
+          { "context": "build" },
+          { "context": "test" },
+          { "context": "check-commits" }
+        ]
+      }
+    },
+    { "type": "non_fast_forward" },
+    { "type": "deletion" }
+  ]
+}
+RULES
+fi
+
+echo "🔒 Ruleset 설정 완료"
 ```
 
 ### Phase 6: 커밋 & Ralph Loop 시작 안내
