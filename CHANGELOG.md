@@ -1,5 +1,41 @@
 # Changelog
 
+## [v2.1.0] - 2026-03-16
+
+### 워커 CRUD 강제
+- `/wi:env` 후 DB 연결 확인되면 AGENT.md에 "mock 금지" 자동 주입
+- PROMPT.md: Prisma 존재 시 하드코딩/mock 데이터 사용 금지 규칙 추가
+- `/wi:prd`: DB 기술 스택 있으면 WI 설명에 `(Prisma {모델} CRUD)` 자동 명시
+- `/wi:start` Phase 4-1: Prisma 스키마 감지 → DB 연결 테스트 → 조건부 주입
+- 3중 방어: WI 설명 + AGENT.md + PROMPT.md (하나 무시해도 나머지에서 잡힘)
+- DB 연결 실패 시 mock 금지 미주입 (기존 동작 유지, 장점 상쇄 방지)
+
+### E2E 테스트 워커 작성 금지
+- PROMPT.md: Step 3 "WI 유형 판별" 추가 — E2E WI는 스킵 + guardrails 기록
+- `/wi:prd`: E2E 테스트를 WI로 포함하지 않도록 경고 추가
+- `/wi:guide`: L4 규칙 테이블에 "E2E 금지" 행 추가
+- `ralph-operations.md`: Section 7 "E2E 테스트 — 워커 작성 금지" 추가
+- 근거: wi-test WI-088~096에서 111개 E2E 테스트 전멸 (셀렉터 추측 실패)
+
+### enqueue-pr.sh 버그 수정
+- grep 패턴 매칭 → merge queue API 존재 확인 방식으로 변경
+- `gh api repos/.../rulesets`에서 merge_queue 타입 확인
+- merge queue 있는데 enqueue 실패 → `--auto` (squash 없이) + 에러 메시지 출력
+- merge queue 없음 → `--auto --squash` fallback (기존 동작)
+- "merge queue 미지원" 오탐 문제 해결
+
+### macOS 호환성
+- ralph.sh: `sedi()` 래퍼 추가 (macOS BSD `sed -i ''` 호환)
+- launch-loop.sh: macOS에서 tmux 우선 사용 (osascript fallback)
+- tmux로 Claude Code 세션과 완전 독립 실행 (stdout 리다이렉트 문제 해결)
+
+### 순차 모드 mark_wi_done 누락 수정
+- 순차 모드에서 SHA 변경 시 `mark_wi_done()` 호출 추가
+- 기존: `execute_parallel`에서만 호출 → 순차 모드에서 completed_wis.txt 미기록
+- WI 머지 후 재실행되는 문제 해결
+
+---
+
 ## [v2.0.0] - 2026-03-15
 
 ### 핵심 변경
