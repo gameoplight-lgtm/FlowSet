@@ -1738,6 +1738,36 @@ main() {
       validate_post_iteration || {
         log "Post-validation failed - check guardrails.md"
       }
+
+      # 병렬 모드: batch 전체 머지 대기
+      local batch_prs
+      batch_prs=$(gh pr list --state open --json number --jq '.[].number' 2>/dev/null || true)
+      if [[ -n "$batch_prs" ]]; then
+        local pr_array=()
+        while IFS= read -r pr; do
+          [[ -n "$pr" ]] && pr_array+=("$pr")
+        done <<< "$batch_prs"
+        if [[ ${#pr_array[@]} -gt 0 ]]; then
+          wait_for_batch_merge "${pr_array[@]}"
+        fi
+      fi
+      safe_sync_main
+      last_git_sha=$(git rev-parse HEAD 2>/dev/null || echo "none")
+
+      # 병렬 모드: 검증 에이전트 실행
+      if [[ -f ".ralph/scripts/verify-requirements.sh" && -f ".ralph/requirements.md" ]]; then
+        log "🔍 검증 에이전트 실행 (병렬 batch 완료 후)..."
+        local verify_result=0
+        bash .ralph/scripts/verify-requirements.sh || verify_result=$?
+        if [[ $verify_result -eq 2 ]]; then
+          log "⚠️ 검증 에이전트: 요구사항 누락 감지"
+          if [[ -f ".ralph/verify-result.md" ]]; then
+            echo "### [$(date '+%Y-%m-%d %H:%M')] 검증 에이전트 — 요구사항 누락 (Iteration #$loop_count, 병렬)" >> .ralph/guardrails.md
+            grep -E '^- (❌|⚠️)' .ralph/verify-result.md >> .ralph/guardrails.md 2>/dev/null || true
+          fi
+        fi
+      fi
+
       check_progress || break
       save_state "running"
 
