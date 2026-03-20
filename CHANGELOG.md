@@ -1,5 +1,77 @@
 # Changelog
 
+## [v2.2.0] - 2026-03-21
+
+### 머지 대기 — stale base 완전 제거
+- `enqueue-pr.sh --wait`: PR 머지 완료까지 15초 간격 폴링 (timeout 15분)
+- Exit codes: 0=머지완료, 1=CI실패/PR닫힘, 2=timeout
+- ralph.sh 순차 모드: `wait_for_merge()` — 워커 종료 후 머지 대기 → safe_sync_main
+- ralph.sh 병렬 모드: `wait_for_batch_merge()` — batch 전체 머지 대기 → safe_sync_main
+- PROMPT.md: 워커 CI 폴링 제거 — 머지 대기는 ralph.sh가 관리 (워커 턴 12~30% 절약)
+
+### 와이어프레임 필수
+- `/wi:prd` Step 3.5: HTML 와이어프레임 생성 (스킵 불가)
+- data-testid 속성 필수 (E2E 셀렉터 기준)
+- wireframes/{page}.html 저장, 사용자 피드백 → 확정
+- PROMPT.md/AGENT.md: 와이어프레임 참조 규칙
+
+### RAG 강제 매커니즘
+- Stop hook (`stop-rag-check.sh`): 파일 변경 시 RAG 업데이트 자동 알림
+- `.claude/settings.json`: Stop hook 등록
+- ralph.sh `validate_post_iteration`: API/페이지/스키마 변경 시 RAG 미업데이트 감지
+- `/wi:start` Phase 4.5: RAG 초기화 (PRD 도메인별 RAG 파일 + rag-context.md 자동 생성)
+
+### 아키텍처 계약
+- `/wi:start` Phase 4.6: `.ralph/contracts/` 자동 생성
+  - `api-standard.md`: API 응답/에러 형식 표준
+  - `data-flow.md`: 모델별 SSOT + 역할별 접근 경로
+- PROMPT.md/AGENT.md: contracts/ 참조 규칙
+
+### 검증 강화 (validate_post_iteration 확장)
+- scope creep 감지 (변경 파일 10개 초과)
+- 금지 파일 수정 감지 (.env, package-lock)
+- 빈 구현 감지 (TODO/placeholder/stub)
+- API 형식 검증 (contracts/ 존재 시)
+- WI 수용 기준 자동 검증 (GET/POST 핸들러 매칭)
+- requirements.md 수정 차단 + 자동 복원
+
+### RALPH_STATUS 확장
+- FILES_LIST, TESTS_ADDED, TESTS_TOTAL 필드 추가
+- TESTS_ADDED=0 시 TDD 미수행 경고
+
+### trace 구조화
+- `log_trace()`: `.ralph/logs/trace.jsonl` (JSON Lines, 200건 rotation)
+- iteration별: wi, result, files, elapsed, cost 기록
+
+### 사용자 원본 요구사항 보호
+- `/wi:prd` Step 6: `.ralph/requirements.md` 자동 생성 (사용자 원본 고정)
+- 에이전트 수정 금지 — validate에서 변경 감지 시 위반 처리 + 자동 복원
+- ralph-operations.md Section 0: requirements.md 수정 절대 금지
+
+### 검증 에이전트 분리
+- `verify-requirements.sh`: 별도 `claude -p` 실행 (Read/Grep/Glob만 허용)
+- requirements.md vs git diff 대조 → 누락/불완전/미구현 판정
+- ralph.sh 순차/병렬 모드: validate 후 자동 실행
+- Stop hook: 소스 3파일+ 변경 시 자동 트리거
+
+### E2E 테스트 품질 강제
+- ralph-operations.md Section 7.1: E2E 품질 기준
+  - 필수: page.goto + click/fill + data-testid
+  - 금지: request.get/post (seed/setup 제외)
+- Stop hook: E2E 파일에 API shortcut / UI 미사용 감지 → 경고
+
+### 템플릿 강화
+- CLAUDE.md: 핵심 규칙 8개 + 자동 강제 항목 명시
+- project.md: 코드 품질 체크리스트 (경계분리/모듈화/캡슐화/재사용/하드코딩 금지)
+- ralph-operations.md: v2.2.0 운영 규칙 (머지 대기, RAG, requirements 보호)
+
+### 신규 파일
+- `verify-requirements.sh`: 검증 전용 에이전트 스크립트
+- `stop-rag-check.sh`: Stop hook (RAG + E2E + requirements + 검증 에이전트 트리거)
+- `.claude/settings.json`: Stop hook 등록
+
+---
+
 ## [v2.1.0] - 2026-03-16
 
 ### 워커 CRUD 강제
