@@ -45,3 +45,4 @@ docs/                   → 문서 계층구조 (L0~L4)
 4. **사이드이펙트 사전 분석**: 깨질 수 있는 기존 기능 미리 식별
 5. **장점 상쇄 없는 해결**: 한쪽 고치면서 다른 쪽 깨지는 해결 금지
 6. **검증 후 커밋**: lint → build → test 통과 확인 후에만
+7. **E2E = 브라우저 UI 조작**: `request.get/post` (API 직접 호출)는 E2E가 아님. `page.goto → page.fill → page.click → 결과 검증` 패턴 필수. wireframes/의 data-testid 셀렉터 사용

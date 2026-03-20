@@ -33,4 +33,32 @@ if [[ "$rag_needed" == true ]]; then
   fi
 fi
 
+# E2E 테스트 품질 검사 (API shortcut 감지)
+e2e_files=$(echo "$changed_files" | grep -E '\.(spec|test)\.(ts|js)$' 2>/dev/null || true)
+if [[ -z "$e2e_files" ]]; then
+  e2e_files=$(echo "$changed_files" | grep -E '^e2e/' 2>/dev/null || true)
+fi
+
+if [[ -n "$e2e_files" ]]; then
+  for ef in $e2e_files; do
+    [[ ! -f "$ef" ]] && continue
+    # request.get/post (API shortcut) 감지 — seed/setup 외
+    if grep -E 'request\.(get|post|put|delete|patch)\(' "$ef" 2>/dev/null | grep -vq 'beforeAll\|beforeEach\|seed\|setup' 2>/dev/null; then
+      echo ""
+      echo "⚠️  E2E에 API shortcut 감지: $ef"
+      echo "   request.get/post는 seed에서만 허용. 본문은 page.goto/click/fill 사용."
+      echo ""
+      break
+    fi
+    # page.goto 없으면 브라우저 테스트 아님
+    if ! grep -q 'page\.goto\|page\.click\|page\.fill' "$ef" 2>/dev/null; then
+      echo ""
+      echo "⚠️  E2E에 UI 인터랙션 없음: $ef"
+      echo "   wireframes/의 data-testid로 실제 UI를 조작하세요."
+      echo ""
+      break
+    fi
+  done
+fi
+
 exit 0

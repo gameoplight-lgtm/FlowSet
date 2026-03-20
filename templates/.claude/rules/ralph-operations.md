@@ -41,6 +41,48 @@
 - E2E 테스트는 대화형 세션에서 Playwright로 실제 화면을 보며 작성
 - **단위 테스트(jest/vitest)는 워커가 TDD로 작성** — 이건 정상 처리
 
+## 7.1 E2E 테스트 품질 기준 — 대화형 작성 시 필수 (v2.2.0)
+
+E2E 테스트는 **실제 브라우저에서 사용자 동작을 재현**해야 합니다.
+
+**필수 패턴 (Browser UI interaction):**
+```typescript
+// 1. 페이지 이동
+await page.goto('/attendance');
+
+// 2. UI 조작 (wireframes/의 data-testid 사용)
+await page.fill('[data-testid="date-input"]', '2026-03-18');
+await page.click('[data-testid="check-in-btn"]');
+
+// 3. 응답 대기
+await page.waitForResponse('**/api/attendance');
+
+// 4. UI 상태 검증
+await expect(page.locator('[data-testid="status"]')).toContainText('출근 완료');
+```
+
+**금지 패턴 (API shortcut — E2E가 아님):**
+```typescript
+// ❌ API 직접 호출은 E2E가 아니라 integration test
+const response = await request.post('/api/attendance', { data: {...} });
+expect(response.status()).toBe(201);
+```
+
+**규칙:**
+- `request.get()`, `request.post()` 등 API 직접 호출은 E2E 테스트 본문에서 금지
+  - 예외: `beforeAll`/`beforeEach`에서 seed 데이터 준비 시에만 허용
+- 모든 E2E 테스트는 최소 1개의 `page.goto()` + UI 인터랙션(`click`, `fill`, `select`) 포함
+- 셀렉터는 wireframes/의 `data-testid` 속성 사용 (CSS 클래스/태그 셀렉터 금지)
+- CRUD 흐름: 생성 → 목록 확인 → 수정 → 삭제 → 목록에서 제거 확인 (전체 사이클)
+- 3권한 검증: admin/employee/platform 각 역할에서 동일 흐름 테스트
+
+**검증 체크리스트 (E2E 작성 완료 전):**
+- [ ] `page.goto()` 있는가? (브라우저 네비게이션)
+- [ ] `page.click()` / `page.fill()` 있는가? (UI 인터랙션)
+- [ ] `data-testid` 셀렉터 사용하는가? (안정적 셀렉터)
+- [ ] `request.post/get`이 본문에 없는가? (API shortcut 금지)
+- [ ] UI 상태 변화를 검증하는가? (텍스트/요소 존재 확인)
+
 ## 8. 머지 대기 (v2.2.0)
 - PR enqueue 후 **머지 완료를 확인한 다음** 다음 작업 시작
 - 이전 PR이 머지 안 된 상태에서 다음 브랜치 작업 금지 (stale base 방지)
