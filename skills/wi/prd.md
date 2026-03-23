@@ -156,6 +156,42 @@ L2 모듈:
 이대로 갈까요? 변경하고 싶은 부분이 있으면 말씀해주세요.
 ```
 
+### Step 3.5: 와이어프레임 생성 (필수)
+
+L1 도메인별 핵심 페이지의 HTML 와이어프레임을 생성합니다. **스킵 불가.**
+
+```
+절차:
+1. L1 도메인별 핵심 페이지 목록 추출 (L2/L3 기반)
+   - 각 도메인의 메인 페이지 + CRUD 화면 식별
+   - 네비게이션 구조 (사이드바, 탑바, 라우팅) 설계
+
+2. 페이지별 HTML 와이어프레임 생성:
+   - 시맨틱 HTML + 최소 inline 스타일 (레이아웃 확인용)
+   - data-testid 속성 필수 포함 (향후 E2E 테스트 연동)
+   - 주요 UI 요소: 테이블, 폼, 버튼, 모달, 탭
+   - 네비게이션 링크 연결
+
+3. wireframes/{page-name}.html 로 저장
+
+4. 사용자에게 와이어프레임 제시:
+   "와이어프레임을 생성했습니다. 브라우저에서 확인해주세요:
+    wireframes/index.html (전체 목록)
+    wireframes/{page}.html (개별 페이지)
+
+    수정할 부분이 있으면 말씀해주세요."
+
+5. 피드백 → 수정 반복 (확정까지)
+
+6. 확정 후 prd-state.json에 wireframe_confirmed: true 기록
+```
+
+**와이어프레임 규칙:**
+- 각 페이지에 `data-testid` 속성 필수 (E2E 셀렉터 기준)
+- 레이아웃/구조만 정의, 스타일링은 개발 시 적용
+- index.html에 전체 페이지 목록 + 링크 포함
+- 워커가 구현 시 와이어프레임의 구조를 따라야 함
+
 ### Step 4: L4 태스크 생성
 
 L3까지 확정되면 각 기능별 구체적 태스크를 자동 생성.
@@ -167,6 +203,7 @@ L3까지 확정되면 각 기능별 구체적 태스크를 자동 생성.
 - 순서: 스키마/모델 → API → UI → 단위 테스트
 - 1태스크 = 파일 5개 이내 수정, 1컨텍스트 윈도우 완료 가능
 - 각 태스크에 수용 기준 포함
+- UI 태스크는 해당 와이어프레임 참조: "(wireframes/{page}.html 참조)" 포함
 ```
 
 **⚠️ E2E 테스트는 WI로 포함하지 않음:**
@@ -182,6 +219,15 @@ L3까지 확정되면 각 기능별 구체적 태스크를 자동 생성.
   - 예: "출근 기록 API 구현" → "출근 기록 API 구현 (Prisma AttendanceRecord CRUD)"
 - 워커가 WI 설명만 보고도 Prisma를 사용해야 함을 인지할 수 있어야 함
 - DB가 없는 프로젝트는 해당 없음
+
+**⚠️ WI 설명에 데이터 흐름 + 수용 기준 포함:**
+- API 태스크: SSOT 엔드포인트 명시 + HTTP 메서드 + 응답 형식
+  - 예: "출근 기록 API (SSOT: /api/attendance, GET+POST, api-standard.md 준수)"
+- UI 태스크: 호출할 API + 성공 시 동작 명시
+  - 예: "출근 폼 UI → POST /api/attendance → 성공 시 목록 리프레시 (wireframes/attendance.html 참조)"
+- 수용 기준: 검증 가능한 1줄
+  - 예: "수용 기준: POST 호출 시 DB에 레코드 생성 + 에러 시 400 반환"
+- `/wi:start`에서 .ralph/contracts/data-flow.md가 있으면 SSOT 엔드포인트 자동 참조
 
 ### Step 5: PRD 초안 생성 & 피드백
 
@@ -219,12 +265,41 @@ Write docs/L3-feature/{name}.md (각 소분류별)
 # prd-state.json은 삭제하지 않음 (wi:status에서 참조)
 ```
 
+**사용자 원본 요구사항 고정 (에이전트 수정 금지):**
+```bash
+# .ralph/requirements.md 생성
+# prd-state.json의 user_constraints[] + decisions[]에서 추출
+# 이 파일은 사용자 원본이며, 에이전트가 절대 수정하지 않음
+# 매 커밋 시 이 파일 기준으로 구현 누락 여부 검증됨
+```
+
+`.ralph/requirements.md` 형식:
+```markdown
+# 사용자 원본 요구사항 (수정 금지)
+# 이 파일은 /wi:prd 확정 시 자동 생성됩니다.
+# 에이전트가 이 파일을 수정하면 validate_post_iteration에서 위반으로 감지됩니다.
+
+## 사용자 제약조건
+{user_constraints[] 각 항목을 그대로 기록}
+
+## 사용자 결정사항
+{decisions[] 각 항목: chosen + reason}
+
+## 기능 요구사항 (L3 기준)
+{PRD의 L3 기능별 1줄 요약 — 검증 키워드 포함}
+예:
+- 출근/퇴근 기록: IP 기반 검증, 실시간 기록, API 연동
+- 휴가 신청: 잔여 연차 계산, 승인 워크플로우, 이메일 알림
+- 고용지원금: 외부 API 연동(고용24), 자동 매칭
+```
+
 안내 출력:
 ```
 PRD가 확정되었습니다.
 
 📄 PRD.md 저장 완료
 📁 docs/ 계층 문서 생성 완료
+🔒 .ralph/requirements.md 생성 (사용자 원본 — 수정 금지)
 
 다음 단계: /wi:start 로 Ralph Loop을 시작하세요.
 ```

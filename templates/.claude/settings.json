@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .ralph/scripts/stop-rag-check.sh",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
