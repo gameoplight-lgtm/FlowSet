@@ -58,10 +58,28 @@
 - `spawn-template.md` → `team-worker.md`: 정식 서브에이전트
 - `team-roles.md`: agents/ → rules/ 이동 (참조 문서)
 
+### Vault 연동 범용화 (루프/대화형/팀 전체)
+- `vault_detect_mode()`: loop_state.json mtime 기반 루프 감지, TEAM_NAME 팀 감지, 나머지 대화형
+- `vault_sync_state()`: 5인자(루프) 하위 호환 + 7인자(범용) 확장
+- `vault_save_session_log()`: sessions/{timestamp}.md에 세션 작업 로그 저장 (전 모드)
+- `vault_read_latest_session()`: 시맨틱 검색으로 최근 세션 로그 읽기
+- `vault_sync_team_state()`/`vault_read_team_state()`: teams/{team}.md CRUD
+- `session-start-vault.sh` 전면 재작성: state.md + 최근 세션 + 팀 state + resume 이슈
+- `stop-rag-check.sh` vault 섹션 교체: `last_assistant_message` 처음 500자로 세션 요약 저장
+- 루프 모드 Stop hook은 state.md skip (flowset.sh가 관리)
+- `resolve-team.sh`: TEAM_NAME 해소 (환경변수 → .flowset/teams/{session_id}.team 폴백)
+
+### RalphLoop → FlowSet 리네임
+- 디렉토리: .ralph/ → .flowset/, 파일: ralph.sh → flowset.sh, .ralphrc → .flowsetrc
+- 변수: RALPH_VERSION → FLOWSET_VERSION, RALPH_STATUS → FLOWSET_STATUS
+- 전체 410건 치환, 잔여 0건
+
 ### 설계 원칙
-- v2.x 하위 호환: VAULT_ENABLED=false, TEAM_NAME 미설정 시 기존 동작 유지
-- vault 연결 실패 시 파일 기반 RAG 폴백 (graceful degradation)
+- VAULT_ENABLED=true 기본값 (Obsidian 미설치 시 graceful degradation)
+- TEAM_NAME 미설정 시 소유권/계약 hook 무동작 (solo 모드 호환)
+- vault 연결 실패 시 파일 기반 RAG 폴백
 - flowset.sh 메인 루프(Section 9) 구조 변경 없음
+- 리드/팀원 모델 전부 opus 고정
 
 ---
 

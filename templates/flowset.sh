@@ -1394,9 +1394,9 @@ execute_parallel() {
     total=$((completed + unchecked))
 
     local context
-    context=$(cat <<'_RALPH_CTX_END_'
+    context=$(cat <<'_FLOWSET_CTX_END_'
 [PARALLEL MODE] 이미 작업 브랜치에 있음. 별도 브랜치 생성·PR 생성 불필요. 현재 브랜치에서 직접 커밋할 것. fix_plan.md는 절대 수정하지 말 것(외부 루프가 처리).
-_RALPH_CTX_END_
+_FLOWSET_CTX_END_
 )
     # RAG 컨텍스트 조립 (워커별 — WI에 맞는 파일 힌트 포함)
     local rag_context
