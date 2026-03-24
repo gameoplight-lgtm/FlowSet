@@ -57,10 +57,14 @@ vault_write() {
   [[ "${VAULT_ENABLED}" != "true" ]] && return 0
   local path="${1:?vault_write: path required}"
   local content="${2:-}"
+  local tmpfile
+  tmpfile=$(mktemp 2>/dev/null || echo "/tmp/vault_write_$$")
+  printf '%s' "$content" > "$tmpfile"
   _vault_curl "${VAULT_URL}/vault/${path}" \
     -X PUT \
-    -H "Content-Type: text/markdown" \
-    -d "${content}" > /dev/null
+    -H "Content-Type: text/markdown; charset=utf-8" \
+    --data-binary "@${tmpfile}" > /dev/null
+  rm -f "$tmpfile"
 }
 
 # vault 파일 삭제
