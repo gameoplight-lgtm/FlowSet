@@ -146,6 +146,9 @@ cp "$TEMPLATE_DIR/.flowset/scripts/resolve-team.sh" ./.flowset/scripts/resolve-t
 mkdir -p ./.flowset/contracts
 cp "$TEMPLATE_DIR/.flowset/contracts/api-standard.md" ./.flowset/contracts/api-standard.md
 cp "$TEMPLATE_DIR/.flowset/contracts/data-flow.md" ./.flowset/contracts/data-flow.md
+cp "$TEMPLATE_DIR/.flowset/contracts/sprint-template.md" ./.flowset/contracts/sprint-template.md
+cp "$TEMPLATE_DIR/.flowset/scripts/task-completed-eval.sh" ./.flowset/scripts/task-completed-eval.sh
+mkdir -p ./.flowset/eval-results
 
 # v3.0: Agent Teams 템플릿 (선택적 — AGENT_TEAMS 활성화 시 사용)
 if [[ -d "$TEMPLATE_DIR/.claude/agents" ]]; then

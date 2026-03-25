@@ -46,6 +46,20 @@ disallowedTools: Edit, Write
   - 해소 방법: 인터페이스 mock으로 한쪽 unblock → 실 구현 후 교체
 - **5-6 태스크/팀원**: 한 팀원에게 과다 할당 금지
 
+### 3.5단계: 스프린트 계약 작성
+
+각 WI에 대해 생성자-평가자 간 **스프린트 계약**을 작성합니다.
+`.flowset/contracts/sprint-{NNN}.md` 파일을 `.flowset/contracts/sprint-template.md` 기반으로 생성.
+
+**계약 내용:**
+- **수용 기준**: 이 WI가 "완료"로 인정되려면 충족해야 할 구체적 조건
+- **검증 방법**: 평가자가 수용 기준을 어떻게 확인할지
+- **산출물**: 완료 시 존재해야 할 파일/결과물
+- **평가 유형**: `code` (코드 프로젝트) 또는 `visual` (디자인/비주얼 프로젝트)
+
+**중요**: 스프린트 계약이 있는 WI는 TaskCompleted hook이 평가자 검증을 강제합니다.
+계약 없는 WI는 기존처럼 자유롭게 완료 가능.
+
 ### 4단계: 팀원 Spawn
 각 팀원은 Agent tool의 team-worker 서브에이전트로 spawn합니다:
 ```
@@ -58,8 +72,27 @@ Agent(
 )
 ```
 
-### 5단계: 결과 통합
-- 각 팀원 결과 확인
+### 5단계: 평가자 검증 + 결과 통합
+
+팀원이 태스크를 완료하면 **evaluator 서브에이전트**로 채점합니다:
+
+```
+Agent(
+  description: "WI-{NNN} 평가",
+  prompt: "스프린트 계약 .flowset/contracts/sprint-{NNN}.md 기준으로 채점하세요.
+  생성자가 수정한 파일: {변경 파일 목록}",
+  subagent_type: "evaluator"
+)
+```
+
+**평가 루프:**
+1. evaluator가 채점표(EVAL_RESULT) 반환
+2. PASS (7.0+) → `mkdir -p .flowset/eval-results && touch .flowset/eval-results/WI-{NNN}.pass` → 태스크 완료
+3. FAIL (<7.0) → ISSUES를 생성자에게 전달 → 수정 → 재평가 (최대 3회)
+4. 3회 FAIL → 리드가 직접 판단 또는 사용자에게 에스컬레이션
+
+**결과 통합:**
+- 모든 WI PASS 확인
 - 실패 태스크 재할당 또는 에스컬레이션
 - 모든 태스크 완료 시 PR 생성/리뷰
 
