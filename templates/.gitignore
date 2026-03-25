@@ -41,6 +41,7 @@ desktop.ini
 .flowset/completed_wis.txt
 .flowset/loop_state.json
 .flowset/teams/
+.flowset/eval-results/
 
 # Parallel worktree (flowset.sh 자동 생성/정리)
 .worktrees/
